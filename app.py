@@ -38,7 +38,7 @@ st.markdown("""
     color: gray;
 }
 .title {
-    color: gray;
+    color: black;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -110,7 +110,7 @@ def render_card(subj):
 
     st.markdown(f"""
     <div class="card">
-        <h4 class="tltle">{subj['name']}</h4>
+        <h4 class="title">{subj['name']}</h4>
         <div class="category">{subj['category']}</div>
         <br>
         <span class="badge {level_class}">난이도: {subj['level']}</span>
