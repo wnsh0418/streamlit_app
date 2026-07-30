@@ -3,10 +3,10 @@ import streamlit as st
 # ---------------------------
 # 기본 설정
 # ---------------------------
-st.set_page_config(page_title="진로 추천 앱", layout="wide")
+st.set_page_config(page_title="진로 기반 과목 추천", layout="wide")
 
 # ---------------------------
-# CSS (카드 UI 핵심)
+# 카드 UI 스타일
 # ---------------------------
 st.markdown("""
 <style>
@@ -41,57 +41,62 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------------------
-# 데이터
+# 과목 DB (2022 교육과정)
 # ---------------------------
-career_data = {
-    "의사": [
-        {"name": "생명과학Ⅰ", "level": "중", "category": "과학", "reason": "인체 이해"},
-        {"name": "생명과학Ⅱ", "level": "상", "category": "과학", "reason": "심화 생명과학"},
-        {"name": "화학Ⅰ", "level": "중", "category": "과학", "reason": "약물 이해"},
-        {"name": "화학Ⅱ", "level": "상", "category": "과학", "reason": "심화 화학"}
-    ],
-    "개발자": [
-        {"name": "미적분Ⅰ", "level": "중", "category": "수학", "reason": "알고리즘 기초"},
-        {"name": "확률과 통계", "level": "중", "category": "수학", "reason": "데이터 분석"},
-        {"name": "프로그래밍", "level": "중", "category": "정보", "reason": "코딩"},
-        {"name": "인공지능수학", "level": "상", "category": "수학", "reason": "AI 이해"}
-    ],
-    "디자이너": [
-        {"name": "미술", "level": "중", "category": "예술", "reason": "표현력"},
-        {"name": "디자인 일반", "level": "중", "category": "예술", "reason": "디자인 기초"},
-        {"name": "영상 제작", "level": "중", "category": "예술", "reason": "콘텐츠 제작"}
-    ]
+subjects_db = {
+    "수학": ["대수", "미적분Ⅰ", "미적분Ⅱ", "확률과 통계", "기하", "인공지능수학"],
+    "과학": ["물리학Ⅰ", "물리학Ⅱ", "화학Ⅰ", "화학Ⅱ", "생명과학Ⅰ", "생명과학Ⅱ"],
+    "사회": ["경제", "정치와 법", "사회·문화"],
+    "국어": ["독서와 작문", "문학"],
+    "정보": ["정보", "프로그래밍", "데이터 과학"],
+    "예술": ["미술", "디자인 일반", "영상 제작"]
 }
 
 # ---------------------------
-# UI - 사이드바 필터
+# 진로 매핑 데이터
 # ---------------------------
-st.sidebar.title("⚙️ 필터")
-
-career = st.sidebar.selectbox("진로 선택", list(career_data.keys()))
-
-difficulty = st.sidebar.multiselect(
-    "난이도 선택",
-    ["하", "중", "상"],
-    default=["하", "중", "상"]
-)
-
-category_filter = st.sidebar.multiselect(
-    "과목군 선택",
-    ["과학", "수학", "정보", "예술"],
-    default=["과학", "수학", "정보", "예술"]
-)
+career_map = {
+    "의사": ["생명과학Ⅰ", "생명과학Ⅱ", "화학Ⅰ", "화학Ⅱ"],
+    "개발자": ["대수", "미적분Ⅰ", "확률과 통계", "프로그래밍", "인공지능수학"],
+    "디자이너": ["미술", "디자인 일반", "영상 제작"],
+    "경영": ["경제", "사회·문화", "정치와 법", "독서와 작문"]
+}
 
 # ---------------------------
-# 필터 적용
+# 과목 상세 정보 생성
 # ---------------------------
-filtered = []
-for subj in career_data[career]:
-    if subj["level"] in difficulty and subj["category"] in category_filter:
-        filtered.append(subj)
+def build_subject_list(career):
+    result = []
+    for subj in career_map[career]:
+        for category, subs in subjects_db.items():
+            if subj in subs:
+                result.append({
+                    "name": subj,
+                    "category": category,
+                    "level": assign_level(subj),
+                    "reason": generate_reason(career, subj)
+                })
+    return result
 
 # ---------------------------
-# 카드 UI 함수
+# 난이도 자동 설정
+# ---------------------------
+def assign_level(subj):
+    if "Ⅱ" in subj or "인공지능" in subj:
+        return "상"
+    elif "Ⅰ" in subj:
+        return "중"
+    else:
+        return "하"
+
+# ---------------------------
+# 추천 이유 자동 생성
+# ---------------------------
+def generate_reason(career, subj):
+    return f"{career} 진로에서 필요한 핵심 역량과 관련된 과목입니다."
+
+# ---------------------------
+# 카드 UI 렌더링
 # ---------------------------
 def render_card(subj):
     level_class = {
@@ -111,23 +116,66 @@ def render_card(subj):
     """, unsafe_allow_html=True)
 
 # ---------------------------
+# 사이드바 필터
+# ---------------------------
+st.sidebar.title("⚙️ 필터")
+
+career = st.sidebar.selectbox("진로 선택", list(career_map.keys()))
+
+difficulty_filter = st.sidebar.multiselect(
+    "난이도 선택",
+    ["하", "중", "상"],
+    default=["하", "중", "상"]
+)
+
+category_filter = st.sidebar.multiselect(
+    "과목군 선택",
+    list(subjects_db.keys()),
+    default=list(subjects_db.keys())
+)
+
+# ---------------------------
+# 추천 결과 생성
+# ---------------------------
+subjects = build_subject_list(career)
+
+filtered_subjects = [
+    s for s in subjects
+    if s["level"] in difficulty_filter and s["category"] in category_filter
+]
+
+# ---------------------------
 # 메인 UI
 # ---------------------------
-st.title("🎓 진로 기반 과목 추천")
-
+st.title("🎓 진로 기반 선택과목 추천")
 st.subheader(f"📌 {career} 추천 과목")
 
-if filtered:
+if filtered_subjects:
     cols = st.columns(3)
-    for i, subj in enumerate(filtered):
+    for i, subj in enumerate(filtered_subjects):
         with cols[i % 3]:
             render_card(subj)
 else:
     st.warning("조건에 맞는 과목이 없습니다.")
 
 # ---------------------------
-# 추가 UX 요소
+# 유사 진로 추천
 # ---------------------------
 st.markdown("---")
+st.subheader("🔁 유사 진로")
 
-st.info("💡 Tip: 난이도와 과목군을 조합해서 최적의 선택을 찾아보세요.")
+similar_map = {
+    "의사": ["약사", "간호사"],
+    "개발자": ["데이터 분석가", "AI 엔지니어"],
+    "디자이너": ["UX/UI 디자이너", "영상 편집자"],
+    "경영": ["마케팅 전문가", "회계사"]
+}
+
+for s in similar_map[career]:
+    st.write(f"- {s}")
+
+# ---------------------------
+# 푸터
+# ---------------------------
+st.markdown("---")
+st.caption("© 2026 진로 추천 앱 | 2022 개정 교육과정 기반")
