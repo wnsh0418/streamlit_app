@@ -71,7 +71,7 @@ def build_subject_list(career):
         for category, subs in subjects_db.items():
             if subj in subs:
                 result.append({
-                    "name": subj,
+                    "name": subs,
                     "category": category,
                     "level": assign_level(subj),
                     "reason": generate_reason(career, subj)
