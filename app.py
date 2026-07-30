@@ -28,7 +28,7 @@ st.markdown("""
     border-radius: 10px;
     font-size: 12px;
     margin-right: 5px;
-    color: white;
+    color: black;
 }
 .low { background-color: #4CAF50; }
 .mid { background-color: #FF9800; }
